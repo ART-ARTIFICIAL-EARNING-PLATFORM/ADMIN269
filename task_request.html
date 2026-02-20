@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Task Requests</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #1e1e2f; color: white; padding: 20px; }
+        .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
+        textarea, input { width: 100%; padding: 10px; margin-top: 5px; background: #1e1e2f; border: 1px solid #555; color: white; border-radius: 5px; }
+        button { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; color: white;}
+        .btn-blue { background: #3b82f6; } .btn-green { background: #10b981; } .btn-red { background: #ef4444; }
+        .req-box { border-left: 4px solid #3b82f6; padding-left: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <h2>Task Requests</h2><br>
+
+    <div id="requestsList"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com", projectId: "tk65-58e25" });
+        const db = getDatabase(app);
+        
+        // Voice Notification setup
+        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); // Example short sound
+        let previousCount = 0;
+
+        onValue(ref(db, 'tasks'), (snapshot) => {
+            let html = "";
+            let currentCount = 0;
+            snapshot.forEach((child) => {
+                const data = child.val();
+                const uid = child.key;
+                currentCount++;
+
+                if(data.status === "requested") {
+                    html += `
+                    <div class="card req-box">
+                        <h3>Requested by: ${data.userName} (Pending)</h3>
+                        <p>Paste raw text below to Autofill:</p>
+                        <textarea id="raw_${uid}" rows="4" placeholder="First name: \nLast name: \n..."></textarea>
+                        <button class="btn-blue" onclick="autoFill('${uid}')">Autofill</button>
+                        
+                        <div style="margin-top:15px;">
+                            <input type="text" id="fName_${uid}" placeholder="First Name">
+                            <input type="text" id="lName_${uid}" placeholder="Last Name">
+                            <input type="text" id="pass_${uid}" placeholder="Password">
+                            <input type="text" id="birth_${uid}" placeholder="Birthdate">
+                            <input type="text" id="email_${uid}" placeholder="Email">
+                            <input type="text" id="rec_${uid}" placeholder="Recovery Email">
+                            <button class="btn-green" onclick="sendTask('${uid}')">Send to User</button>
+                        </div>
+                    </div>`;
+                } else if (data.status === "submitted") {
+                    html += `
+                    <div class="card req-box" style="border-left-color: #10b981;">
+                        <h3>Review Task: ${data.userName}</h3>
+                        <p><b>User Created Email:</b> ${data.userData.email}</p>
+                        <p><b>Password:</b> ${data.userData.password}</p>
+                        <input type="number" id="coinAmount_${uid}" placeholder="Enter Reward Coins (e.g. 500)" value="500">
+                        <button class="btn-green" onclick="acceptTask('${uid}')">Accept & Pay</button>
+                        <button class="btn-red" onclick="rejectTask('${uid}')">Reject</button>
+                    </div>`;
+                }
+            });
+
+            document.getElementById('requestsList').innerHTML = html || "<p>No active requests.</p>";
+            
+            // Play sound if new request added
+            if(currentCount > previousCount) { audio.play().catch(e=>console.log("Audio block")); }
+            previousCount = currentCount;
+        });
+
+        window.autoFill = function(uid) {
+            let text = document.getElementById(`raw_${uid}`).value;
+            let lines = text.split('\n');
+            lines.forEach(line => {
+                let lower = line.toLowerCase();
+                if(lower.includes("first name")) document.getElementById(`fName_${uid}`).value = line.split(':')[1]?.trim() || "";
+                if(lower.includes("last name")) document.getElementById(`lName_${uid}`).value = line.split(':')[1]?.trim() || "";
+                if(lower.includes("password")) document.getElementById(`pass_${uid}`).value = line.split(':')[1]?.trim() || "";
+                if(lower.includes("birthdate")) document.getElementById(`birth_${uid}`).value = line.split(':')[1]?.trim() || "";
+                if(lower.includes("recovery")) document.getElementById(`rec_${uid}`).value = line.split(':')[1]?.trim() || "";
+                else if(lower.includes("email")) document.getElementById(`email_${uid}`).value = line.split(':')[1]?.trim() || "";
+            });
+        }
+
+        window.sendTask = function(uid) {
+            let adminData = {
+                "First Name": document.getElementById(`fName_${uid}`).value,
+                "Last Name": document.getElementById(`lName_${uid}`).value,
+                "Password": document.getElementById(`pass_${uid}`).value,
+                "Birthdate": document.getElementById(`birth_${uid}`).value,
+                "Email": document.getElementById(`email_${uid}`).value,
+                "Recovery Email": document.getElementById(`rec_${uid}`).value,
+            };
+            update(ref(db, 'tasks/' + uid), { status: "assigned", adminData: adminData });
+        }
+
+        window.acceptTask = async function(uid) {
+            let coins = parseInt(document.getElementById(`coinAmount_${uid}`).value) || 0;
+            let userRef = ref(db, 'users/' + uid);
+            let snapshot = await get(userRef);
+            if(snapshot.exists()) {
+                let user = snapshot.val();
+                let newBal = (user.balance || 0) + coins;
+                let newTasks = (user.tasksCompleted || 0) + 1;
+                await update(userRef, { balance: newBal, tasksCompleted: newTasks });
+                await remove(ref(db, 'tasks/' + uid));
+                alert("Payment Sent & Task Completed!");
+            }
+        }
+
+        window.rejectTask = function(uid) {
+            remove(ref(db, 'tasks/' + uid));
+            alert("Task Rejected & Deleted.");
+        }
+    </script>
+</body>
+</html>
