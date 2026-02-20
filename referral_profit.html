@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Referral & Profit Settings</title>
+    <style>
+        body { background: #1e1e2f; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input { padding: 10px; border-radius: 5px; border:none; margin-right: 10px;}
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; background: #3b82f6;}
+        .leaderboard { margin-top: 30px;}
+        .rank-item { display: flex; justify-content: space-between; background: #2a2a40; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #f59e0b;}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3>Referral Profit Setup (Coins per Active Referral)</h3>
+        <br>
+        <p>Current Direct Profit: <b id="lvl1" style="color:#10b981;">...</b> Coins</p>
+        <input type="number" id="p1" placeholder="Set Direct Profit">
+        <br><br>
+        <p>Current 2nd Level Profit: <b id="lvl2" style="color:#f59e0b;">...</b> Coins</p>
+        <input type="number" id="p2" placeholder="Set Downline Profit">
+        <br><br>
+        <button class="btn" onclick="saveProfit()">Save Profit Settings</button>
+    </div>
+
+    <div class="leaderboard">
+        <h2>🏆 Top Referrals (Ranking)</h2>
+        <div id="rankList" style="margin-top: 15px;"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
+        const db = getDatabase(app);
+
+        // Fetch Profit Settings
+        onValue(ref(db, 'settings/referralProfit'), (snap) => {
+            if(snap.exists()) {
+                document.getElementById('lvl1').innerText = snap.val().level1 || "0";
+                document.getElementById('lvl2').innerText = snap.val().level2 || "0";
+            }
+        });
+
+        window.saveProfit = function() {
+            let l1 = document.getElementById('p1').value;
+            let l2 = document.getElementById('p2').value;
+            if(l1 && l2) {
+                set(ref(db, 'settings/referralProfit'), { level1: parseInt(l1), level2: parseInt(l2) });
+                alert("Saved!");
+            }
+        }
+
+        // Leaderboard Generation
+        onValue(ref(db, 'users'), (snapshot) => {
+            let usersArray = [];
+            snapshot.forEach(child => {
+                let u = child.val();
+                if(u.activeRefs > 0) {
+                    usersArray.push({ name: u.name, refs: u.activeRefs, phone: u.phone });
+                }
+            });
+
+            // Sort by highest active refs
+            usersArray.sort((a, b) => b.refs - a.refs);
+
+            let html = "";
+            usersArray.forEach((user, index) => {
+                let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index+1}`;
+                html += `
+                <div class="rank-item">
+                    <div><b>${medal} ${user.name}</b> <br> <small>${user.phone}</small></div>
+                    <div style="color:#10b981; font-size:20px; font-weight:bold;">${user.refs} Active</div>
+                </div>`;
+            });
+
+            document.getElementById('rankList').innerHTML = html || "<p>No active referrers yet.</p>";
+        });
+    </script>
+</body>
+</html>
