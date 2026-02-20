@@ -11,12 +11,18 @@
         .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
         textarea, input { width: 100%; padding: 10px; margin-top: 5px; background: #1e1e2f; border: 1px solid #555; color: white; border-radius: 5px; }
         button { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; color: white;}
-        .btn-blue { background: #3b82f6; } .btn-green { background: #10b981; } .btn-red { background: #ef4444; }
+        .btn-blue { background: #3b82f6; } .btn-green { background: #10b981; } .btn-red { background: #ef4444; } .btn-yellow { background: #f59e0b; color:black; }
         .req-box { border-left: 4px solid #3b82f6; padding-left: 10px; margin-top: 15px; }
+        .user-info { font-size: 13px; color: #aaa; margin-bottom: 10px; }
+        .time-badge { float: right; font-size: 12px; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;}
+        .input-grid input { margin-top:0; }
+        .btn-group { display: flex; gap:10px; margin-top: 10px;}
+        .btn-group button { flex: 1; margin-top:0;}
     </style>
 </head>
 <body>
-    <h2>Task Requests</h2><br>
+    <h2>Task Requests <span id="audioStatus" style="font-size: 12px; color: #ef4444;">(Click anywhere to enable voice alert)</span></h2><br>
 
     <div id="requestsList"></div>
 
@@ -28,66 +34,133 @@
         const db = getDatabase(app);
         
         // Voice Notification setup
-        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); // Example short sound
+        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); 
+        let audioEnabled = false;
         let previousCount = 0;
 
-        onValue(ref(db, 'tasks'), (snapshot) => {
+        // Enable audio on first click anywhere
+        document.body.addEventListener('click', () => {
+            if(!audioEnabled) {
+                audioEnabled = true;
+                document.getElementById('audioStatus').innerText = "(Voice Alert Active ✓)";
+                document.getElementById('audioStatus').style.color = "#10b981";
+            }
+        }, {once:true});
+
+        // Time formatter
+        function timeAgo(timestamp) {
+            if(!timestamp) return "Just now";
+            let diff = Math.floor((Date.now() - timestamp) / 60000);
+            return diff <= 0 ? "Just now" : `${diff} min ago`;
+        }
+
+        onValue(ref(db, 'tasks'), async (snapshot) => {
             let html = "";
             let currentCount = 0;
+            let tasksArray = [];
+
             snapshot.forEach((child) => {
-                const data = child.val();
-                const uid = child.key;
-                currentCount++;
+                tasksArray.push({ uid: child.key, ...child.val() });
+            });
+
+            // Play sound if NEW request is added
+            if(tasksArray.length > previousCount && audioEnabled) { 
+                audio.play().catch(e => console.log("Audio blocked")); 
+            }
+            previousCount = tasksArray.length;
+
+            for (let data of tasksArray) {
+                const uid = data.uid;
+                
+                // Fetch user data for stats
+                let userSnap = await get(ref(db, 'users/' + uid));
+                let user = userSnap.val() || {};
+                let phone = user.phone || "N/A";
+                let success = user.successCount || 0;
+                let fail = user.failCount || 0;
 
                 if(data.status === "requested") {
                     html += `
                     <div class="card req-box">
-                        <h3>Requested by: ${data.userName} (Pending)</h3>
-                        <p>Paste raw text below to Autofill:</p>
-                        <textarea id="raw_${uid}" rows="4" placeholder="First name: \nLast name: \n..."></textarea>
-                        <button class="btn-blue" onclick="autoFill('${uid}')">Autofill</button>
+                        <span class="time-badge">${timeAgo(data.requestTime)}</span>
+                        <h3>Request: ${data.userName}</h3>
+                        <div class="user-info">
+                            📞 ${phone} | ✅ Success: ${success} | ❌ Failed: ${fail}
+                        </div>
+
+                        <p style="font-size:13px; margin-top:10px;">Paste raw text below to Autofill:</p>
+                        <!-- Textarea size reduced to 2 rows -->
+                        <textarea id="raw_${uid}" rows="2" placeholder="Paste data here..."></textarea>
                         
-                        <div style="margin-top:15px;">
+                        <div class="btn-group">
+                            <button class="btn-blue" onclick="autoFill('${uid}')">✨ Smart Autofill</button>
+                            <button class="btn-yellow" onclick="banUser('${uid}')">🚫 Ban 2 Hours</button>
+                        </div>
+                        
+                        <div class="input-grid">
                             <input type="text" id="fName_${uid}" placeholder="First Name">
                             <input type="text" id="lName_${uid}" placeholder="Last Name">
                             <input type="text" id="pass_${uid}" placeholder="Password">
-                            <input type="text" id="birth_${uid}" placeholder="Birthdate">
                             <input type="text" id="email_${uid}" placeholder="Email">
                             <input type="text" id="rec_${uid}" placeholder="Recovery Email">
-                            <button class="btn-green" onclick="sendTask('${uid}')">Send to User</button>
+                            <input type="text" id="birth_${uid}" placeholder="Birthdate">
                         </div>
+                        <button class="btn-green" style="width:100%;" onclick="sendTask('${uid}')">Send Task to User</button>
                     </div>`;
                 } else if (data.status === "submitted") {
                     html += `
                     <div class="card req-box" style="border-left-color: #10b981;">
                         <h3>Review Task: ${data.userName}</h3>
-                        <p><b>User Created Email:</b> ${data.userData.email}</p>
-                        <p><b>Password:</b> ${data.userData.password}</p>
+                        <div class="user-info">📞 ${phone} | ✅ Success: ${success} | ❌ Failed: ${fail}</div>
+                        <br>
+                        <p><b>Created Email:</b> <input type="text" value="${data.userData.email}" readonly></p>
+                        <p><b>Password:</b> <input type="text" value="${data.userData.password}" readonly></p>
+                        
                         <input type="number" id="coinAmount_${uid}" placeholder="Enter Reward Coins (e.g. 500)" value="500">
-                        <button class="btn-green" onclick="acceptTask('${uid}')">Accept & Pay</button>
-                        <button class="btn-red" onclick="rejectTask('${uid}')">Reject</button>
+                        <div class="btn-group">
+                            <button class="btn-green" onclick="acceptTask('${uid}', ${success})">✔️ Accept & Pay</button>
+                            <button class="btn-red" onclick="rejectTask('${uid}', ${fail})">❌ Reject</button>
+                        </div>
                     </div>`;
                 }
-            });
+            }
 
-            document.getElementById('requestsList').innerHTML = html || "<p>No active requests.</p>";
-            
-            // Play sound if new request added
-            if(currentCount > previousCount) { audio.play().catch(e=>console.log("Audio block")); }
-            previousCount = currentCount;
+            document.getElementById('requestsList').innerHTML = html || "<p style='text-align:center; color:#aaa;'>No active requests.</p>";
         });
 
+        // Smart Autofill Logic
         window.autoFill = function(uid) {
             let text = document.getElementById(`raw_${uid}`).value;
-            let lines = text.split('\n');
-            lines.forEach(line => {
+            // Split by lines or commas
+            let elements = text.split(/[\n,]/); 
+            
+            elements.forEach(line => {
                 let lower = line.toLowerCase();
-                if(lower.includes("first name")) document.getElementById(`fName_${uid}`).value = line.split(':')[1]?.trim() || "";
-                if(lower.includes("last name")) document.getElementById(`lName_${uid}`).value = line.split(':')[1]?.trim() || "";
-                if(lower.includes("password")) document.getElementById(`pass_${uid}`).value = line.split(':')[1]?.trim() || "";
-                if(lower.includes("birthdate")) document.getElementById(`birth_${uid}`).value = line.split(':')[1]?.trim() || "";
-                if(lower.includes("recovery")) document.getElementById(`rec_${uid}`).value = line.split(':')[1]?.trim() || "";
-                else if(lower.includes("email")) document.getElementById(`email_${uid}`).value = line.split(':')[1]?.trim() || "";
+                // Extract value if it has a colon ':', else take the whole line
+                let val = line.includes(':') ? line.split(':')[1].trim() : line.trim();
+                
+                if(!val) return;
+
+                // Smart Matching
+                if (lower.includes("first") || lower.includes("নাম")) {
+                    document.getElementById(`fName_${uid}`).value = val;
+                } else if (lower.includes("last") || lower.includes("পদবি")) {
+                    document.getElementById(`lName_${uid}`).value = val;
+                } else if (lower.includes("pass") || lower.includes("পাসওয়ার্ড")) {
+                    document.getElementById(`pass_${uid}`).value = val;
+                } else if (lower.includes("rec") || lower.includes("রিকভারি")) {
+                    document.getElementById(`rec_${uid}`).value = val;
+                } else if (lower.includes("birth") || lower.includes("dob")) {
+                    document.getElementById(`birth_${uid}`).value = val;
+                } else if (val.includes("@") && !lower.includes("rec")) {
+                    // Any unassigned string with '@' is probably the target email
+                    document.getElementById(`email_${uid}`).value = val;
+                } else if (document.getElementById(`pass_${uid}`).value === "") {
+                     // Fallback: If it's a short random string, it might be password
+                     if(val.length > 5 && val.length < 15 && !val.includes(" ")) {
+                         document.getElementById(`pass_${uid}`).value = val;
+                     }
+                }
             });
         }
 
@@ -96,30 +169,44 @@
                 "First Name": document.getElementById(`fName_${uid}`).value,
                 "Last Name": document.getElementById(`lName_${uid}`).value,
                 "Password": document.getElementById(`pass_${uid}`).value,
-                "Birthdate": document.getElementById(`birth_${uid}`).value,
                 "Email": document.getElementById(`email_${uid}`).value,
                 "Recovery Email": document.getElementById(`rec_${uid}`).value,
+                "Birthdate": document.getElementById(`birth_${uid}`).value,
             };
-            update(ref(db, 'tasks/' + uid), { status: "assigned", adminData: adminData });
+            // Send task and start the 13 minute timer trigger
+            update(ref(db, 'tasks/' + uid), { 
+                status: "assigned", 
+                adminData: adminData,
+                assignTime: Date.now() // Track when it was assigned
+            });
         }
 
-        window.acceptTask = async function(uid) {
+        window.acceptTask = async function(uid, currentSuccess) {
             let coins = parseInt(document.getElementById(`coinAmount_${uid}`).value) || 0;
             let userRef = ref(db, 'users/' + uid);
             let snapshot = await get(userRef);
             if(snapshot.exists()) {
                 let user = snapshot.val();
                 let newBal = (user.balance || 0) + coins;
-                let newTasks = (user.tasksCompleted || 0) + 1;
-                await update(userRef, { balance: newBal, tasksCompleted: newTasks });
+                let newSuccess = (currentSuccess || 0) + 1;
+                
+                await update(userRef, { balance: newBal, successCount: newSuccess });
                 await remove(ref(db, 'tasks/' + uid));
-                alert("Payment Sent & Task Completed!");
             }
         }
 
-        window.rejectTask = function(uid) {
-            remove(ref(db, 'tasks/' + uid));
-            alert("Task Rejected & Deleted.");
+        window.rejectTask = async function(uid, currentFail) {
+            let newFail = (currentFail || 0) + 1;
+            await update(ref(db, 'users/' + uid), { failCount: newFail });
+            await remove(ref(db, 'tasks/' + uid));
+        }
+
+        // Ban User Logic
+        window.banUser = async function(uid) {
+            let banTime = Date.now() + (2 * 60 * 60 * 1000); // Current time + 2 hours
+            await update(ref(db, 'users/' + uid), { banUntil: banTime });
+            await remove(ref(db, 'tasks/' + uid)); // Remove their current pending request
+            alert("User banned for 2 hours.");
         }
     </script>
 </body>
