@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Target Requests Management</title>
+    <style>
+        body { background: #1e1e2f; color: white; font-family: sans-serif; padding: 20px; }
+        .card { background: #2a2a40; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #3b82f6; }
+        .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; margin-top: 10px; }
+        .btn-green { background: #10b981; } .btn-red { background: #ef4444; } .btn-blue { background: #3b82f6; }
+    </style>
+</head>
+<body>
+    <h2>User Target Requests</h2>
+    <div id="requestsList"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, update, get, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
+        const db = getDatabase(app);
+
+        onValue(ref(db, 'target_requests'), async (snapshot) => {
+            let html = "";
+            let usersSnap = await get(ref(db, 'users')); // Get all users to check active progress
+            
+            snapshot.forEach(child => {
+                let d = child.val();
+                let uid = child.key;
+                let userRefs = usersSnap.val()[uid]?.activeRefs || 0;
+
+                if(d.status === "Pending Approval") {
+                    html += `
+                    <div class="card">
+                        <h3>${d.userName} wants to start ${d.type} Level ${d.level}</h3>
+                        <button class="btn btn-green" onclick="startTarget('${uid}', ${d.days}, ${userRefs})">Approve & Start Time</button>
+                        <button class="btn btn-red" onclick="rejectTarget('${uid}')">Reject</button>
+                    </div>`;
+                } 
+                else if(d.status === "Active") {
+                    let progress = userRefs - d.initialRefs;
+                    let daysLeft = Math.ceil((d.deadline - Date.now()) / (1000 * 60 * 60 * 24));
+                    html += `
+                    <div class="card" style="border-left-color: #f59e0b;">
+                        <h3>${d.userName} is working...</h3>
+                        <p>Progress: ${progress} / ${d.accRequired} Accounts Activated.</p>
+                        <p>Time Left: ${daysLeft} Days</p>
+                    </div>`;
+                }
+                else if(d.status === "Payment Requested") {
+                    let progress = userRefs - d.initialRefs;
+                    html += `
+                    <div class="card" style="border-left-color: #10b981;">
+                        <h3 style="color:#10b981">Payment Request from ${d.userName}</h3>
+                        <p>Target: ${d.type} Level ${d.level} | Reward: ${d.rewardCoins} Coins</p>
+                        <p>Admin Verify: User actually activated ${progress} accounts.</p>
+                        <button class="btn btn-green" onclick="payTarget('${uid}', ${d.rewardCoins})">Approve & Pay</button>
+                        <button class="btn btn-red" onclick="rejectTarget('${uid}')">Fake! Reject</button>
+                    </div>`;
+                }
+            });
+            document.getElementById('requestsList').innerHTML = html || "<p>No active requests right now.</p>";
+        });
+
+        window.startTarget = function(uid, days, initialRefs) {
+            let deadline = Date.now() + (days * 24 * 60 * 60 * 1000);
+            update(ref(db, 'target_requests/' + uid), { status: "Active", startTime: Date.now(), deadline, initialRefs });
+        }
+
+        window.rejectTarget = function(uid) {
+            remove(ref(db, 'target_requests/' + uid));
+        }
+
+        window.payTarget = async function(uid, reward) {
+            let userRef = ref(db, 'users/' + uid);
+            let snap = await get(userRef);
+            if(snap.exists()) {
+                let newBal = (snap.val().balance || 0) + parseInt(reward);
+                await update(userRef, { balance: newBal });
+                await remove(ref(db, 'target_requests/' + uid)); // clear target so they can take new one
+                alert("Paid Successfully!");
+            }
+        }
+    </script>
+</body>
+</html>
