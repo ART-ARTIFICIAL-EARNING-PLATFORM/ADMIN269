@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Details</title>
+    <style>
+        body { background: #1e1e2f; color: white; font-family: sans-serif; padding: 20px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        th { background: #2a2a40; color: #3b82f6;}
+    </style>
+</head>
+<body>
+    <h2>All Users Database</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th><th>Number</th><th>Password</th><th>Status</th><th>UID</th><th>Ref Code</th>
+            </tr>
+        </thead>
+        <tbody id="userTable"></tbody>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
+        const db = getDatabase(app);
+
+        onValue(ref(db, 'users'), (snapshot) => {
+            let tr = "";
+            snapshot.forEach(child => {
+                let u = child.val();
+                let col = u.status === "Active" ? "#10b981" : "#ef4444";
+                tr += `<tr>
+                    <td>${u.name}</td><td>${u.phone}</td><td>${u.password}</td>
+                    <td style="color:${col}; font-weight:bold;">${u.status}</td>
+                    <td><small>${child.key}</small></td><td>${u.myRefCode}</td>
+                </tr>`;
+            });
+            document.getElementById('userTable').innerHTML = tr;
+        });
+    </script>
+</body>
+</html>
