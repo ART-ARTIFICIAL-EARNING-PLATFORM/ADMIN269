@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Targets</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #1e1e2f; color: white; padding: 20px; }
+        .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
+        input, select { width: 100%; padding: 12px; margin-top: 10px; background: #1e1e2f; border: 1px solid #555; color: white; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background: #3b82f6; border: none; color: white; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 15px; }
+        .target-box { background: rgba(59, 130, 246, 0.1); padding: 15px; border-left: 4px solid #3b82f6; margin-top: 10px; border-radius: 5px; display:flex; justify-content: space-between;}
+        .del-btn { background: #ef4444; padding: 5px 15px; border-radius: 5px; cursor: pointer; border: none; color: white; width: auto; margin-top: 0;}
+    </style>
+</head>
+<body>
+    <h2>Create New Target</h2>
+    <div class="card">
+        <select id="type">
+            <option value="Weekly">Weekly Target</option>
+            <option value="Monthly">Monthly Target</option>
+        </select>
+        <input type="number" id="level" placeholder="Target Level (e.g. 1)">
+        <input type="number" id="days" placeholder="Time Limit (in Days)">
+        <input type="number" id="accounts" placeholder="Required Active Accounts">
+        <input type="number" id="reward" placeholder="Reward Coins (e.g. 10000)">
+        <button id="createBtn">Create Target</button>
+    </div>
+
+    <h2>Active Targets</h2>
+    <div id="targetsList"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com", projectId: "tk65-58e25" });
+        const db = getDatabase(app);
+
+        document.getElementById('createBtn').addEventListener('click', () => {
+            let type = document.getElementById('type').value;
+            let level = document.getElementById('level').value;
+            let days = document.getElementById('days').value;
+            let acc = document.getElementById('accounts').value;
+            let reward = document.getElementById('reward').value;
+
+            if(!level || !days || !acc || !reward) return alert("Fill all fields!");
+
+            let targetId = Date.now().toString();
+            set(ref(db, 'targets/' + targetId), { type, level, days, accRequired: acc, rewardCoins: reward });
+            alert("Target Created!");
+        });
+
+        onValue(ref(db, 'targets'), (snapshot) => {
+            let html = "";
+            snapshot.forEach(child => {
+                let d = child.val();
+                html += `
+                <div class="target-box">
+                    <div>
+                        <h4 style="color:#10b981">${d.type} - Level ${d.level}</h4>
+                        <small>${d.accRequired} Accounts | ${d.days} Days | ${d.rewardCoins} Coins</small>
+                    </div>
+                    <button class="del-btn" onclick="deleteTarget('${child.key}')">Delete</button>
+                </div>`;
+            });
+            document.getElementById('targetsList').innerHTML = html || "<p>No targets found.</p>";
+        });
+
+        window.deleteTarget = function(id) {
+            remove(ref(db, 'targets/' + id));
+            alert("Deleted successfully!");
+        }
+    </script>
+</body>
+</html>
