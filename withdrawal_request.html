@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Withdrawals Management</title>
+    <style>
+        body { background: #1e1e2f; color: white; font-family: sans-serif; padding: 20px; }
+        .settings-card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        input { padding: 10px; border-radius: 5px; border:none; margin-right: 10px;}
+        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-green { background: #10b981; } .btn-red { background: #ef4444; } .btn-blue { background: #3b82f6;}
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #444; padding: 10px; text-align: left; }
+        th { background: #2a2a40; color: #10b981;}
+    </style>
+</head>
+<body>
+    <div class="settings-card">
+        <h3>Withdraw Settings</h3>
+        <p style="margin-top:10px;">Current Global Limit: <b id="currentLimit" style="color:#f59e0b;">...</b> Coins</p>
+        <input type="number" id="limitInput" placeholder="New Minimum Limit">
+        <button class="btn btn-blue" onclick="saveLimit()">Save Limit</button>
+    </div>
+
+    <h2>Pending Withdrawals</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>UID Details</th><th>Method</th><th>Account No</th><th>Amount (Coins)</th><th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="withTable"></tbody>
+    </table>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue, set, get, remove, update } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
+        const db = getDatabase(app);
+
+        // Fetch Limit Settings
+        onValue(ref(db, 'settings/withdrawLimit'), (snap) => {
+            document.getElementById('currentLimit').innerText = snap.exists() ? snap.val() : "5000";
+        });
+
+        window.saveLimit = function() {
+            let val = document.getElementById('limitInput').value;
+            if(val) set(ref(db, 'settings/withdrawLimit'), val);
+        }
+
+        // Fetch Withdrawals
+        onValue(ref(db, 'withdrawals'), (snapshot) => {
+            let tr = "";
+            snapshot.forEach(child => {
+                let d = child.val();
+                let id = child.key;
+                tr += `<tr>
+                    <td><small>${d.uid}</small></td>
+                    <td>${d.method}</td>
+                    <td style="color:#f59e0b; font-weight:bold">${d.account}</td>
+                    <td>${d.amount}</td>
+                    <td>
+                        <button class="btn btn-green" onclick="acceptWith('${id}')">Paid</button>
+                        <button class="btn btn-red" onclick="rejectWith('${id}', '${d.uid}', ${d.amount})">Reject & Refund</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('withTable').innerHTML = tr || "<tr><td colspan='5'>No pending requests</td></tr>";
+        });
+
+        window.acceptWith = function(id) {
+            remove(ref(db, 'withdrawals/' + id));
+            alert("Marked as Paid!");
+        }
+
+        window.rejectWith = async function(id, uid, amount) {
+            let userRef = ref(db, 'users/' + uid);
+            let snap = await get(userRef);
+            if(snap.exists()) {
+                let currentBal = snap.val().balance || 0;
+                await update(userRef, { balance: currentBal + amount }); // Refund
+                await remove(ref(db, 'withdrawals/' + id));
+                alert("Rejected & Coins Refunded to User!");
+            }
+        }
+    </script>
+</body>
+</html>
