@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background: #1e1e2f; color: white; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h2 { color: #ef4444; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px;}
+        .stat-card { background: #2a2a40; padding: 20px; text-align: center; border-radius: 10px; border-bottom: 3px solid #3b82f6; }
+        .stat-card h3 { font-size: 24px; margin-top: 10px; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .menu-btn { display: block; padding: 20px; background: #2a2a40; text-align: center; border-radius: 10px; text-decoration: none; color: white; transition: 0.3s; }
+        .menu-btn:hover { background: #ef4444; }
+        .menu-btn i { font-size: 24px; margin-bottom: 10px; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2><i class="fas fa-shield-alt"></i> Control Panel</h2>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <p>Total Users</p>
+            <h3 id="tUsers">0</h3>
+        </div>
+        <div class="stat-card">
+            <p>Total Coins</p>
+            <h3 id="tCoins" style="color:#f59e0b">0</h3>
+        </div>
+        <div class="stat-card">
+            <p>Total Taka</p>
+            <h3 id="tTaka" style="color:#10b981">৳ 0</h3>
+        </div>
+    </div>
+
+    <div class="menu-grid">
+        <a href="task_request.html" class="menu-btn"><i class="fas fa-envelope-open-text"></i><br>Task Requests</a>
+        <a href="user_details.html" class="menu-btn"><i class="fas fa-users-cog"></i><br>User Details</a>
+        <a href="monthly_weekly_target_create.html" class="menu-btn"><i class="fas fa-plus-circle"></i><br>Create Target</a>
+        <a href="monthly_weekly_request.html" class="menu-btn"><i class="fas fa-calendar-check"></i><br>Target Requests</a>
+        <a href="withdrawal_request.html" class="menu-btn"><i class="fas fa-money-bill-wave"></i><br>Withdrawals</a>
+        <a href="referral_profit.html" class="menu-btn"><i class="fas fa-sitemap"></i><br>Referral Settings</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        if(localStorage.getItem("adminAccess") !== "true") window.location.href = "login.html";
+
+        const app = initializeApp({
+            databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com",
+            projectId: "tk65-58e25"
+        });
+        const db = getDatabase(app);
+
+        onValue(ref(db, 'users'), (snapshot) => {
+            let uCount = 0, cCount = 0;
+            snapshot.forEach((child) => {
+                uCount++;
+                cCount += (child.val().balance || 0);
+            });
+            document.getElementById('tUsers').innerText = uCount;
+            document.getElementById('tCoins').innerText = cCount;
+            document.getElementById('tTaka').innerText = "৳ " + ((cCount/1000)*17).toFixed(2);
+        });
+    </script>
+</body>
+</html>
