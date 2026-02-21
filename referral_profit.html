@@ -2,27 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Referral & Profit Settings</title>
+    <title>Admin - Referral Setup</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
-        body { background: #1e1e2f; color: white; font-family: sans-serif; padding: 20px; }
-        .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        input { padding: 10px; border-radius: 5px; border:none; margin-right: 10px;}
-        .btn { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; background: #3b82f6;}
+        body { background: #1e1e2f; color: white; font-family: 'Poppins', sans-serif; padding: 20px; }
+        .card { background: #2a2a40; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);}
+        input { width: 100%; padding: 12px; border-radius: 5px; border:1px solid #555; background: #1e1e2f; color: white; margin-bottom: 15px; font-size: 16px;}
+        .btn { padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; background: #10b981; width: 100%; font-size: 16px;}
         .leaderboard { margin-top: 30px;}
-        .rank-item { display: flex; justify-content: space-between; background: #2a2a40; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #f59e0b;}
+        .rank-item { display: flex; justify-content: space-between; align-items: center; background: #2a2a40; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #f59e0b;}
     </style>
 </head>
 <body>
     <div class="card">
-        <h3>Referral Profit Setup (Coins per Active Referral)</h3>
-        <br>
-        <p>Current Direct Profit: <b id="lvl1" style="color:#10b981;">...</b> Coins</p>
-        <input type="number" id="p1" placeholder="Set Direct Profit">
-        <br><br>
-        <p>Current 2nd Level Profit: <b id="lvl2" style="color:#f59e0b;">...</b> Coins</p>
-        <input type="number" id="p2" placeholder="Set Downline Profit">
-        <br><br>
+        <h2 style="color: #3b82f6; margin-bottom: 20px;">⚙️ Referral Profit Setup</h2>
+        
+        <p>🥇 Level 1 (Direct) Current Profit: <b id="lvl1" style="color:#10b981; font-size: 18px;">...</b> Coins</p>
+        <input type="number" id="p1" placeholder="Enter Coin for Level 1 (e.g. 500)">
+        
+        <p style="margin-top: 10px;">🥈 Level 2 (Downline) Current Profit: <b id="lvl2" style="color:#f59e0b; font-size: 18px;">...</b> Coins</p>
+        <input type="number" id="p2" placeholder="Enter Coin for Level 2 (e.g. 200)">
+        
         <button class="btn" onclick="saveProfit()">Save Profit Settings</button>
+        <p id="saveMsg" style="color: #10b981; text-align: center; margin-top: 10px; display: none;">Saved Successfully! ✅</p>
     </div>
 
     <div class="leaderboard">
@@ -37,20 +39,32 @@
         const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
         const db = getDatabase(app);
 
-        // Fetch Profit Settings
+        // Fetch Current Settings
         onValue(ref(db, 'settings/referralProfit'), (snap) => {
             if(snap.exists()) {
                 document.getElementById('lvl1').innerText = snap.val().level1 || "0";
                 document.getElementById('lvl2').innerText = snap.val().level2 || "0";
+                
+                // Keep input boxes filled with current value
+                document.getElementById('p1').value = snap.val().level1 || "";
+                document.getElementById('p2').value = snap.val().level2 || "";
             }
         });
 
         window.saveProfit = function() {
             let l1 = document.getElementById('p1').value;
             let l2 = document.getElementById('p2').value;
-            if(l1 && l2) {
-                set(ref(db, 'settings/referralProfit'), { level1: parseInt(l1), level2: parseInt(l2) });
-                alert("Saved!");
+            if(l1 !== "" && l2 !== "") {
+                set(ref(db, 'settings/referralProfit'), { 
+                    level1: parseInt(l1), 
+                    level2: parseInt(l2) 
+                }).then(() => {
+                    let msg = document.getElementById('saveMsg');
+                    msg.style.display = "block";
+                    setTimeout(() => msg.style.display = "none", 3000); // Hide after 3 seconds
+                });
+            } else {
+                alert("Please enter values for both levels!");
             }
         }
 
@@ -72,12 +86,12 @@
                 let medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index+1}`;
                 html += `
                 <div class="rank-item">
-                    <div><b>${medal} ${user.name}</b> <br> <small>${user.phone}</small></div>
+                    <div><b>${medal} ${user.name}</b> <br> <small style="color:#aaa;">📞 ${user.phone}</small></div>
                     <div style="color:#10b981; font-size:20px; font-weight:bold;">${user.refs} Active</div>
                 </div>`;
             });
 
-            document.getElementById('rankList').innerHTML = html || "<p>No active referrers yet.</p>";
+            document.getElementById('rankList').innerHTML = html || "<p style='color:#aaa;'>No active referrers yet.</p>";
         });
     </script>
 </body>
