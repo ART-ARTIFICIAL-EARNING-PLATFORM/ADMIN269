@@ -332,10 +332,29 @@
         const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com", projectId: "tk65-58e25" });
         const db = getDatabase(app);
         
-        // Voice Notification setup
+        // Voice & Notification Request setup
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
         const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); 
         let audioEnabled = false;
-        let previousCount = 0;
+        
+        // Variables to track changes for specific states
+        let prevReqCount = -1;
+        let prevSubCount = -1;
+
+        // Notification Helper Function
+        function notifyAdmin(title, message) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body: message });
+            }
+            if ('speechSynthesis' in window && audioEnabled) {
+                let speech = new SpeechSynthesisUtterance(message);
+                speech.lang = 'en-US';
+                window.speechSynthesis.speak(speech);
+            }
+        }
 
         // Enable audio on first click anywhere
         document.body.addEventListener('click', () => {
@@ -357,18 +376,35 @@
 
         onValue(ref(db, 'tasks'), async (snapshot) => {
             let html = "";
-            let currentCount = 0;
             let tasksArray = [];
+            
+            let currReqCount = 0;
+            let currSubCount = 0;
 
             snapshot.forEach((child) => {
-                tasksArray.push({ uid: child.key, ...child.val() });
+                let data = child.val();
+                tasksArray.push({ uid: child.key, ...data });
+                
+                // Track counts for smart notification
+                if(data.status === "requested") currReqCount++;
+                if(data.status === "submitted") currSubCount++;
             });
 
-            // Play sound if NEW request is added
-            if(tasksArray.length > previousCount && audioEnabled) { 
-                audio.play().catch(e => console.log("Audio blocked")); 
+            // Smart Voice and Browser Notification Trigger
+            if (prevReqCount !== -1 && prevSubCount !== -1 && audioEnabled) {
+                if (currReqCount > prevReqCount) {
+                    notifyAdmin("New Task Request", "You have a new task request from a user.");
+                    audio.play().catch(e => console.log(e));
+                }
+                if (currSubCount > prevSubCount) {
+                    notifyAdmin("Task Submitted", "A user has submitted a task for review.");
+                    audio.play().catch(e => console.log(e));
+                }
             }
-            previousCount = tasksArray.length;
+            
+            // Update tracking variables
+            prevReqCount = currReqCount;
+            prevSubCount = currSubCount;
 
             for (let data of tasksArray) {
                 const uid = data.uid;
