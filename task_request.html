@@ -4,25 +4,324 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Task Requests</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background: #1e1e2f; color: white; padding: 20px; }
-        .card { background: #2a2a40; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; }
-        textarea, input { width: 100%; padding: 10px; margin-top: 5px; background: #1e1e2f; border: 1px solid #555; color: white; border-radius: 5px; }
-        button { padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; color: white;}
-        .btn-blue { background: #3b82f6; } .btn-green { background: #10b981; } .btn-red { background: #ef4444; } .btn-yellow { background: #f59e0b; color:black; }
-        .req-box { border-left: 4px solid #3b82f6; padding-left: 10px; margin-top: 15px; }
-        .user-info { font-size: 13px; color: #aaa; margin-bottom: 10px; }
-        .time-badge { float: right; font-size: 12px; background: rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 10px; }
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;}
-        .input-grid input { margin-top:0; }
-        .btn-group { display: flex; gap:10px; margin-top: 10px;}
-        .btn-group button { flex: 1; margin-top:0;}
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        
+        body { 
+            background: #000; 
+            color: white; 
+            padding: 25px 20px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            animation: bgMove 15s ease-in-out infinite;
+            z-index: -2;
+        }
+
+        @keyframes bgMove {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(3deg); }
+        }
+
+        /* Grid overlay */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: -1;
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #fff;
+        }
+
+        h2 i {
+            color: #60a5fa;
+        }
+
+        #audioStatus {
+            font-size: 13px;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            margin-left: auto;
+            font-weight: 500;
+        }
+
+        .card { 
+            background: rgba(255,255,255,0.03); 
+            padding: 30px 25px; 
+            border-radius: 24px; 
+            margin-bottom: 25px; 
+            border: 1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .req-box { 
+            border-left: 4px solid #3b82f6; 
+            padding-left: 20px; 
+            margin-top: 0;
+        }
+
+        .req-box.review {
+            border-left-color: #10b981;
+        }
+
+        .time-badge { 
+            float: right; 
+            font-size: 12px; 
+            background: rgba(255,255,255,0.1); 
+            padding: 6px 12px; 
+            border-radius: 20px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.8);
+        }
+
+        h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-info { 
+            font-size: 14px; 
+            color: rgba(255,255,255,0.5); 
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .user-info span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .user-info i {
+            font-size: 14px;
+        }
+
+        textarea, input { 
+            width: 100%; 
+            padding: 16px 20px; 
+            margin-top: 0;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.3); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: white; 
+            border-radius: 14px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        textarea:focus, input:focus {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        textarea::placeholder, input::placeholder {
+            color: rgba(255,255,255,0.3);
+        }
+
+        button { 
+            padding: 14px 24px; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-blue { 
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-blue:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-green { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-green:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-red { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-red:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+        }
+
+        .btn-yellow { 
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .btn-yellow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+        }
+
+        .input-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 15px; 
+            margin-top: 20px;
+        }
+
+        .input-grid input {
+            margin-bottom: 0;
+        }
+
+        .btn-group { 
+            display: flex; 
+            gap: 15px; 
+            margin-top: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-group button { 
+            flex: 1;
+        }
+
+        .send-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 18px;
+            font-size: 16px;
+        }
+
+        .review-section p {
+            margin-bottom: 15px;
+        }
+
+        .review-section p b {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 500;
+        }
+
+        .review-section input[readonly] {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            padding: 60px 20px;
+            font-size: 16px;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: rgba(255,255,255,0.2);
+        }
+
+        /* Floating particles */
+        .particle {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { top: 70%; left: 90%; animation-delay: 2s; }
+        .particle:nth-child(3) { top: 30%; left: 80%; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.2; }
+            50% { transform: translateY(-30px) scale(1.2); opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
-    <h2>Task Requests <span id="audioStatus" style="font-size: 12px; color: #ef4444;">(Click anywhere to enable voice alert)</span></h2><br>
+    <div class="bg-animation"></div>
+    <div class="grid-overlay"></div>
+    
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+
+    <h2><i class="fas fa-tasks"></i> Task Requests <span id="audioStatus">(Click anywhere to enable voice alert)</span></h2>
 
     <div id="requestsList"></div>
 
@@ -44,6 +343,8 @@
                 audioEnabled = true;
                 document.getElementById('audioStatus').innerText = "(Voice Alert Active ✓)";
                 document.getElementById('audioStatus').style.color = "#10b981";
+                document.getElementById('audioStatus').style.background = "rgba(16, 185, 129, 0.1)";
+                document.getElementById('audioStatus').style.borderColor = "rgba(16, 185, 129, 0.2)";
             }
         }, {once:true});
 
@@ -82,19 +383,20 @@
                 if(data.status === "requested") {
                     html += `
                     <div class="card req-box">
-                        <span class="time-badge">${timeAgo(data.requestTime)}</span>
-                        <h3>Request: ${data.userName}</h3>
+                        <span class="time-badge"><i class="fas fa-clock"></i> ${timeAgo(data.requestTime)}</span>
+                        <h3><i class="fas fa-user"></i> Request: ${data.userName}</h3>
                         <div class="user-info">
-                            📞 ${phone} | ✅ Success: ${success} | ❌ Failed: ${fail}
+                            <span><i class="fas fa-phone"></i> ${phone}</span>
+                            <span style="color: #34d399;"><i class="fas fa-check-circle"></i> Success: ${success}</span>
+                            <span style="color: #ef4444;"><i class="fas fa-times-circle"></i> Failed: ${fail}</span>
                         </div>
 
-                        <p style="font-size:13px; margin-top:10px;">Paste raw text below to Autofill:</p>
-                        <!-- Textarea size reduced to 2 rows -->
+                        <p style="font-size:14px; color: rgba(255,255,255,0.6); margin-bottom: 10px;">Paste raw text below to Autofill:</p>
                         <textarea id="raw_${uid}" rows="2" placeholder="Paste data here..."></textarea>
                         
                         <div class="btn-group">
-                            <button class="btn-blue" onclick="autoFill('${uid}')">✨ Smart Autofill</button>
-                            <button class="btn-yellow" onclick="banUser('${uid}')">🚫 Ban 2 Hours</button>
+                            <button class="btn-blue" onclick="autoFill('${uid}')"><i class="fas fa-magic"></i> Smart Autofill</button>
+                            <button class="btn-yellow" onclick="banUser('${uid}')"><i class="fas fa-ban"></i> Ban 2 Hours</button>
                         </div>
                         
                         <div class="input-grid">
@@ -105,27 +407,38 @@
                             <input type="text" id="rec_${uid}" placeholder="Recovery Email">
                             <input type="text" id="birth_${uid}" placeholder="Birthdate">
                         </div>
-                        <button class="btn-green" style="width:100%;" onclick="sendTask('${uid}')">Send Task to User</button>
+                        <button class="btn-green send-btn" onclick="sendTask('${uid}')"><i class="fas fa-paper-plane"></i> Send Task to User</button>
                     </div>`;
                 } else if (data.status === "submitted") {
                     html += `
-                    <div class="card req-box" style="border-left-color: #10b981;">
-                        <h3>Review Task: ${data.userName}</h3>
-                        <div class="user-info">📞 ${phone} | ✅ Success: ${success} | ❌ Failed: ${fail}</div>
-                        <br>
-                        <p><b>Created Email:</b> <input type="text" value="${data.userData.email}" readonly></p>
-                        <p><b>Password:</b> <input type="text" value="${data.userData.password}" readonly></p>
+                    <div class="card req-box review">
+                        <span class="time-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><i class="fas fa-check"></i> Submitted</span>
+                        <h3><i class="fas fa-clipboard-check"></i> Review Task: ${data.userName}</h3>
+                        <div class="user-info">
+                            <span><i class="fas fa-phone"></i> ${phone}</span>
+                            <span style="color: #34d399;"><i class="fas fa-check-circle"></i> Success: ${success}</span>
+                            <span style="color: #ef4444;"><i class="fas fa-times-circle"></i> Failed: ${fail}</span>
+                        </div>
+                        
+                        <div class="review-section">
+                            <p><b><i class="fas fa-envelope"></i> Created Email:</b> <input type="text" value="${data.userData.email}" readonly></p>
+                            <p><b><i class="fas fa-lock"></i> Password:</b> <input type="text" value="${data.userData.password}" readonly></p>
+                        </div>
                         
                         <input type="number" id="coinAmount_${uid}" placeholder="Enter Reward Coins (e.g. 500)" value="500">
                         <div class="btn-group">
-                            <button class="btn-green" onclick="acceptTask('${uid}', ${success})">✔️ Accept & Pay</button>
-                            <button class="btn-red" onclick="rejectTask('${uid}', ${fail})">❌ Reject</button>
+                            <button class="btn-green" onclick="acceptTask('${uid}', ${success})"><i class="fas fa-check"></i> Accept & Pay</button>
+                            <button class="btn-red" onclick="rejectTask('${uid}', ${fail})"><i class="fas fa-times"></i> Reject</button>
                         </div>
                     </div>`;
                 }
             }
 
-            document.getElementById('requestsList').innerHTML = html || "<p style='text-align:center; color:#aaa;'>No active requests.</p>";
+            document.getElementById('requestsList').innerHTML = html || `
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No active requests.</p>
+                </div>`;
         });
 
         // Smart Autofill Logic
