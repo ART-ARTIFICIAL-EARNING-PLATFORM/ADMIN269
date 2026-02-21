@@ -316,6 +316,26 @@
         });
         const db = getDatabase(app);
 
+        // Request Notification Permission on load
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        // Voice and Browser Notification Function
+        function notifyAdmin(title, message) {
+            // Browser Notification
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body: message });
+            }
+            // Voice Notification
+            if ('speechSynthesis' in window) {
+                let speech = new SpeechSynthesisUtterance(message);
+                speech.lang = 'en-US';
+                window.speechSynthesis.speak(speech);
+            }
+        }
+
+        // Home Stats
         onValue(ref(db, 'users'), (snapshot) => {
             let uCount = 0, cCount = 0;
             snapshot.forEach((child) => {
@@ -325,6 +345,42 @@
             document.getElementById('tUsers').innerText = uCount;
             document.getElementById('tCoins').innerText = cCount;
             document.getElementById('tTaka').innerText = "৳ " + ((cCount/1000)*17).toFixed(2);
+        });
+
+        // Listen for New Task Requests
+        let firstLoadTask = true;
+        let initialTaskCount = 0;
+        onValue(ref(db, 'task_requests'), (snapshot) => {
+            let data = snapshot.val() || {};
+            let currentTaskCount = Object.keys(data).length;
+            
+            if (firstLoadTask) {
+                initialTaskCount = currentTaskCount;
+                firstLoadTask = false;
+            } else if (currentTaskCount > initialTaskCount) {
+                notifyAdmin("New Task Request!", "You have received a new task request.");
+                initialTaskCount = currentTaskCount;
+            } else {
+                initialTaskCount = currentTaskCount; // If request is deleted/accepted
+            }
+        });
+
+        // Listen for New Monthly/Weekly Target Requests
+        let firstLoadTarget = true;
+        let initialTargetCount = 0;
+        onValue(ref(db, 'target_requests'), (snapshot) => {
+            let data = snapshot.val() || {};
+            let currentTargetCount = Object.keys(data).length;
+            
+            if (firstLoadTarget) {
+                initialTargetCount = currentTargetCount;
+                firstLoadTarget = false;
+            } else if (currentTargetCount > initialTargetCount) {
+                notifyAdmin("New Target Request!", "You have a new target request.");
+                initialTargetCount = currentTargetCount;
+            } else {
+                initialTargetCount = currentTargetCount; // If request is deleted/accepted
+            }
         });
 
         window.logout = function() {
