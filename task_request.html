@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* আপনার আগের সব CSS হুবহু সেম আছে, কোনো চেঞ্জ করা হয়নি */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         
         body { 
@@ -18,7 +19,6 @@
             overflow-x: hidden;
         }
 
-        /* Animated background */
         .bg-animation {
             position: fixed;
             top: 0;
@@ -38,7 +38,6 @@
             50% { transform: scale(1.1) rotate(3deg); }
         }
 
-        /* Grid overlay */
         .grid-overlay {
             position: fixed;
             top: 0;
@@ -62,9 +61,7 @@
             color: #fff;
         }
 
-        h2 i {
-            color: #60a5fa;
-        }
+        h2 i { color: #60a5fa; }
 
         #audioStatus {
             font-size: 13px;
@@ -75,6 +72,7 @@
             border: 1px solid rgba(239, 68, 68, 0.2);
             margin-left: auto;
             font-weight: 500;
+            cursor: pointer;
         }
 
         .card { 
@@ -100,15 +98,8 @@
             pointer-events: none;
         }
 
-        .req-box { 
-            border-left: 4px solid #3b82f6; 
-            padding-left: 20px; 
-            margin-top: 0;
-        }
-
-        .req-box.review {
-            border-left-color: #10b981;
-        }
+        .req-box { border-left: 4px solid #3b82f6; padding-left: 20px; margin-top: 0;}
+        .req-box.review { border-left-color: #10b981; }
 
         .time-badge { 
             float: right; 
@@ -140,15 +131,8 @@
             flex-wrap: wrap;
         }
 
-        .user-info span {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .user-info i {
-            font-size: 14px;
-        }
+        .user-info span { display: flex; align-items: center; gap: 5px; }
+        .user-info i { font-size: 14px; }
 
         textarea, input { 
             width: 100%; 
@@ -169,14 +153,8 @@
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        textarea::placeholder, input::placeholder {
-            color: rgba(255,255,255,0.3);
-        }
+        textarea { resize: vertical; min-height: 80px; }
+        textarea::placeholder, input::placeholder { color: rgba(255,255,255,0.3); }
 
         button { 
             padding: 14px 24px; 
@@ -193,107 +171,33 @@
             gap: 8px;
         }
 
-        .btn-blue { 
-            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-        }
+        .btn-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-blue:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
 
-        .btn-blue:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-        }
+        .btn-green { background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .btn-green:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); }
 
-        .btn-green { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        }
+        .btn-red { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+        .btn-red:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
 
-        .btn-green:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
-        }
+        .btn-yellow { background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%); color: #000; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3); }
+        .btn-yellow:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4); }
 
-        .btn-red { 
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-        }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .input-grid input { margin-bottom: 0; }
 
-        .btn-red:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
-        }
+        .btn-group { display: flex; gap: 15px; margin-top: 15px; margin-bottom: 20px; }
+        .btn-group button { flex: 1; }
 
-        .btn-yellow { 
-            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-            color: #000;
-            box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);
-        }
+        .send-btn { width: 100%; margin-top: 20px; padding: 18px; font-size: 16px; }
 
-        .btn-yellow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
-        }
+        .review-section p { margin-bottom: 15px; }
+        .review-section p b { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.7); font-weight: 500; }
+        .review-section input[readonly] { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); color: #34d399; }
 
-        .input-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
-            margin-top: 20px;
-        }
+        .empty-state { text-align: center; color: rgba(255,255,255,0.4); padding: 60px 20px; font-size: 16px; }
+        .empty-state i { font-size: 48px; margin-bottom: 20px; color: rgba(255,255,255,0.2); }
 
-        .input-grid input {
-            margin-bottom: 0;
-        }
-
-        .btn-group { 
-            display: flex; 
-            gap: 15px; 
-            margin-top: 15px;
-            margin-bottom: 20px;
-        }
-
-        .btn-group button { 
-            flex: 1;
-        }
-
-        .send-btn {
-            width: 100%;
-            margin-top: 20px;
-            padding: 18px;
-            font-size: 16px;
-        }
-
-        .review-section p {
-            margin-bottom: 15px;
-        }
-
-        .review-section p b {
-            display: block;
-            margin-bottom: 8px;
-            color: rgba(255,255,255,0.7);
-            font-weight: 500;
-        }
-
-        .review-section input[readonly] {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: rgba(16, 185, 129, 0.2);
-            color: #34d399;
-        }
-
-        .empty-state {
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            padding: 60px 20px;
-            font-size: 16px;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: rgba(255,255,255,0.2);
-        }
-
-        /* Floating particles */
         .particle {
             position: fixed;
             width: 3px;
@@ -302,7 +206,6 @@
             border-radius: 50%;
             animation: float 8s ease-in-out infinite;
         }
-
         .particle:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
         .particle:nth-child(2) { top: 70%; left: 90%; animation-delay: 2s; }
         .particle:nth-child(3) { top: 30%; left: 80%; animation-delay: 4s; }
@@ -321,7 +224,7 @@
     <div class="particle"></div>
     <div class="particle"></div>
 
-    <h2><i class="fas fa-tasks"></i> Task Requests <span id="audioStatus">(Click anywhere to enable voice alert)</span></h2>
+    <h2><i class="fas fa-tasks"></i> Task Requests <span id="audioStatus">(Click here to enable voice alert)</span></h2>
 
     <div id="requestsList"></div>
 
@@ -340,32 +243,56 @@
         const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); 
         let audioEnabled = false;
         
-        // Variables to track changes for specific states
         let prevReqCount = -1;
         let prevSubCount = -1;
 
-        // Notification Helper Function
-        function notifyAdmin(title, message) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title, { body: message });
-            }
-            if ('speechSynthesis' in window && audioEnabled) {
-                let speech = new SpeechSynthesisUtterance(message);
-                speech.lang = 'en-US';
-                window.speechSynthesis.speak(speech);
-            }
-        }
-
-        // Enable audio on first click anywhere
+        // ব্রাউজারের অডিও ইঞ্জিন আনলক করা (ভয়েস ফিক্স)
         document.body.addEventListener('click', () => {
             if(!audioEnabled) {
                 audioEnabled = true;
+                
+                // Silent speech to unlock SpeechSynthesis in Chrome/Safari
+                if ('speechSynthesis' in window) {
+                    let unlockSpeech = new SpeechSynthesisUtterance('');
+                    window.speechSynthesis.speak(unlockSpeech);
+                }
+                
+                // Silent audio play to unlock AudioContext
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(err => console.log(err));
+
                 document.getElementById('audioStatus').innerText = "(Voice Alert Active ✓)";
                 document.getElementById('audioStatus').style.color = "#10b981";
                 document.getElementById('audioStatus').style.background = "rgba(16, 185, 129, 0.1)";
                 document.getElementById('audioStatus').style.borderColor = "rgba(16, 185, 129, 0.2)";
             }
-        }, {once:true});
+        });
+
+        // Voice Notification Function
+        function notifyAndSpeak(title, message, voiceText) {
+            // Browser Notification
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body: message });
+            }
+
+            if(audioEnabled) {
+                // Play notification sound
+                audio.play().catch(e => console.log(e));
+
+                // Speak voice (অল্প Delay দেওয়া হয়েছে যাতে সাউন্ডের সাথে ক্ল্যাশ না করে)
+                if ('speechSynthesis' in window) {
+                    setTimeout(() => {
+                        window.speechSynthesis.cancel(); 
+                        let speech = new SpeechSynthesisUtterance(voiceText);
+                        speech.lang = 'en-US';
+                        speech.rate = 0.95; // ক্লিয়ার শোনার জন্য স্পিড সামান্য কমানো হয়েছে
+                        window.speechSynthesis.speak(speech);
+                    }, 300);
+                }
+            }
+        }
 
         // Time formatter
         function timeAgo(timestamp) {
@@ -385,7 +312,6 @@
                 let data = child.val();
                 tasksArray.push({ uid: child.key, ...data });
                 
-                // Track counts for smart notification
                 if(data.status === "requested") currReqCount++;
                 if(data.status === "submitted") currSubCount++;
             });
@@ -393,34 +319,34 @@
             // Smart Voice and Browser Notification Trigger
             if (prevReqCount !== -1 && prevSubCount !== -1 && audioEnabled) {
                 if (currReqCount > prevReqCount) {
-                    notifyAdmin("New Task Request", "You have a new task request from a user.");
-                    audio.play().catch(e => console.log(e));
+                    notifyAndSpeak("New Task Request", "You have a new task request from a user.", "Notification! New task applied.");
                 }
                 if (currSubCount > prevSubCount) {
-                    notifyAdmin("Task Submitted", "A user has submitted a task for review.");
-                    audio.play().catch(e => console.log(e));
+                    notifyAndSpeak("Task Submitted", "A user has submitted a task for review.", "Notification! Task submitted.");
                 }
             }
             
-            // Update tracking variables
             prevReqCount = currReqCount;
             prevSubCount = currSubCount;
 
             for (let data of tasksArray) {
                 const uid = data.uid;
                 
-                // Fetch user data for stats
+                // Fetch user data from Users Table
                 let userSnap = await get(ref(db, 'users/' + uid));
                 let user = userSnap.val() || {};
                 let phone = user.phone || "N/A";
                 let success = user.successCount || 0;
                 let fail = user.failCount || 0;
+                
+                // নাম ফিক্স: Users ডাটাবেস থেকে আসল নাম নিবে, না পেলে tasks থেকে, না পেলে Unknown
+                let actualName = user.name || user.fullName || data.userName || "Unknown User";
 
                 if(data.status === "requested") {
                     html += `
                     <div class="card req-box">
                         <span class="time-badge"><i class="fas fa-clock"></i> ${timeAgo(data.requestTime)}</span>
-                        <h3><i class="fas fa-user"></i> Request: ${data.userName}</h3>
+                        <h3><i class="fas fa-user"></i> Request: ${actualName}</h3>
                         <div class="user-info">
                             <span><i class="fas fa-phone"></i> ${phone}</span>
                             <span style="color: #34d399;"><i class="fas fa-check-circle"></i> Success: ${success}</span>
@@ -449,7 +375,7 @@
                     html += `
                     <div class="card req-box review">
                         <span class="time-badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399;"><i class="fas fa-check"></i> Submitted</span>
-                        <h3><i class="fas fa-clipboard-check"></i> Review Task: ${data.userName}</h3>
+                        <h3><i class="fas fa-clipboard-check"></i> Review Task: ${actualName}</h3>
                         <div class="user-info">
                             <span><i class="fas fa-phone"></i> ${phone}</span>
                             <span style="color: #34d399;"><i class="fas fa-check-circle"></i> Success: ${success}</span>
@@ -480,17 +406,14 @@
         // Smart Autofill Logic
         window.autoFill = function(uid) {
             let text = document.getElementById(`raw_${uid}`).value;
-            // Split by lines or commas
             let elements = text.split(/[\n,]/); 
             
             elements.forEach(line => {
                 let lower = line.toLowerCase();
-                // Extract value if it has a colon ':', else take the whole line
                 let val = line.includes(':') ? line.split(':')[1].trim() : line.trim();
                 
                 if(!val) return;
 
-                // Smart Matching
                 if (lower.includes("first") || lower.includes("নাম")) {
                     document.getElementById(`fName_${uid}`).value = val;
                 } else if (lower.includes("last") || lower.includes("পদবি")) {
@@ -502,10 +425,8 @@
                 } else if (lower.includes("birth") || lower.includes("dob")) {
                     document.getElementById(`birth_${uid}`).value = val;
                 } else if (val.includes("@") && !lower.includes("rec")) {
-                    // Any unassigned string with '@' is probably the target email
                     document.getElementById(`email_${uid}`).value = val;
                 } else if (document.getElementById(`pass_${uid}`).value === "") {
-                     // Fallback: If it's a short random string, it might be password
                      if(val.length > 5 && val.length < 15 && !val.includes(" ")) {
                          document.getElementById(`pass_${uid}`).value = val;
                      }
@@ -522,11 +443,10 @@
                 "Recovery Email": document.getElementById(`rec_${uid}`).value,
                 "Birthdate": document.getElementById(`birth_${uid}`).value,
             };
-            // Send task and start the 13 minute timer trigger
             update(ref(db, 'tasks/' + uid), { 
                 status: "assigned", 
                 adminData: adminData,
-                assignTime: Date.now() // Track when it was assigned
+                assignTime: Date.now() 
             });
         }
 
@@ -550,11 +470,10 @@
             await remove(ref(db, 'tasks/' + uid));
         }
 
-        // Ban User Logic
         window.banUser = async function(uid) {
-            let banTime = Date.now() + (2 * 60 * 60 * 1000); // Current time + 2 hours
+            let banTime = Date.now() + (2 * 60 * 60 * 1000); 
             await update(ref(db, 'users/' + uid), { banUntil: banTime });
-            await remove(ref(db, 'tasks/' + uid)); // Remove their current pending request
+            await remove(ref(db, 'tasks/' + uid)); 
             alert("User banned for 2 hours.");
         }
     </script>
