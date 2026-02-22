@@ -8,10 +8,32 @@
         .card { background: #2a2a40; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #3b82f6; }
         .btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; margin-top: 10px; }
         .btn-green { background: #10b981; } .btn-red { background: #ef4444; } .btn-blue { background: #3b82f6; }
+        
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        #audioStatus {
+            font-size: 13px;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: bold;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <h2>User Target Requests</h2>
+    <div class="header-container">
+        <h2>User Target Requests</h2>
+        <span id="audioStatus">(Click here to enable voice alert)</span>
+    </div>
+    
     <div id="requestsList"></div>
 
     <script type="module">
@@ -21,38 +43,108 @@
         const app = initializeApp({ databaseURL: "https://tk65-58e25-default-rtdb.firebaseio.com" });
         const db = getDatabase(app);
 
+        // Voice & Notification Request setup
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
+
+        const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-16.mp3'); 
+        let audioEnabled = false;
+        
+        // Variables to track changes for specific states
+        let prevPendingCount = -1;
+        let prevPaymentCount = -1;
+
+        // ব্রাউজারের অডিও ইঞ্জিন আনলক করা (ভয়েস ফিক্স)
+        document.body.addEventListener('click', () => {
+            if(!audioEnabled) {
+                audioEnabled = true;
+                
+                // Silent speech to unlock SpeechSynthesis
+                if ('speechSynthesis' in window) {
+                    let unlockSpeech = new SpeechSynthesisUtterance('');
+                    window.speechSynthesis.speak(unlockSpeech);
+                }
+                
+                // Silent audio play to unlock AudioContext
+                audio.play().then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }).catch(err => console.log(err));
+
+                document.getElementById('audioStatus').innerText = "(Voice Alert Active ✓)";
+                document.getElementById('audioStatus').style.color = "#10b981";
+                document.getElementById('audioStatus').style.background = "rgba(16, 185, 129, 0.1)";
+                document.getElementById('audioStatus').style.borderColor = "rgba(16, 185, 129, 0.2)";
+            }
+        });
+
+        // Voice Notification Function
+        function notifyAndSpeak(title, message, voiceText) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, { body: message });
+            }
+
+            if(audioEnabled) {
+                audio.play().catch(e => console.log(e));
+
+                if ('speechSynthesis' in window) {
+                    setTimeout(() => {
+                        window.speechSynthesis.cancel(); 
+                        let speech = new SpeechSynthesisUtterance(voiceText);
+                        speech.lang = 'en-US';
+                        speech.rate = 0.95; 
+                        window.speechSynthesis.speak(speech);
+                    }, 300);
+                }
+            }
+        }
+
         onValue(ref(db, 'target_requests'), async (snapshot) => {
             let html = "";
             let usersSnap = await get(ref(db, 'users')); // Get all users to check active progress
+            let allUsers = usersSnap.val() || {};
             
+            let currPendingCount = 0;
+            let currPaymentCount = 0;
+
             snapshot.forEach(child => {
                 let d = child.val();
                 let uid = child.key;
-                let userRefs = usersSnap.val()[uid]?.activeRefs || 0;
+                
+                // Name Fix: আসল নাম ডাটাবেস থেকে নেওয়া হচ্ছে
+                let user = allUsers[uid] || {};
+                let actualName = user.name || user.fullName || d.userName || "Unknown User";
+                
+                let userRefs = user.activeRefs || 0;
+
+                // কাউন্ট ট্র্যাক করা হচ্ছে নোটিফিকেশনের জন্য
+                if(d.status === "Pending Approval") currPendingCount++;
+                if(d.status === "Payment Requested") currPaymentCount++;
 
                 if(d.status === "Pending Approval") {
                     html += `
                     <div class="card">
-                        <h3>${d.userName} wants to start ${d.type} Level ${d.level}</h3>
+                        <h3>${actualName} wants to start ${d.type} Level ${d.level}</h3>
                         <button class="btn btn-green" onclick="startTarget('${uid}', ${d.days}, ${userRefs})">Approve & Start Time</button>
                         <button class="btn btn-red" onclick="rejectTarget('${uid}')">Reject</button>
                     </div>`;
                 } 
                 else if(d.status === "Active") {
-                    let progress = userRefs - d.initialRefs;
+                    let progress = userRefs - (d.initialRefs || 0);
                     let daysLeft = Math.ceil((d.deadline - Date.now()) / (1000 * 60 * 60 * 24));
                     html += `
                     <div class="card" style="border-left-color: #f59e0b;">
-                        <h3>${d.userName} is working...</h3>
+                        <h3>${actualName} is working...</h3>
                         <p>Progress: ${progress} / ${d.accRequired} Accounts Activated.</p>
                         <p>Time Left: ${daysLeft} Days</p>
                     </div>`;
                 }
                 else if(d.status === "Payment Requested") {
-                    let progress = userRefs - d.initialRefs;
+                    let progress = userRefs - (d.initialRefs || 0);
                     html += `
                     <div class="card" style="border-left-color: #10b981;">
-                        <h3 style="color:#10b981">Payment Request from ${d.userName}</h3>
+                        <h3 style="color:#10b981">Payment Request from ${actualName}</h3>
                         <p>Target: ${d.type} Level ${d.level} | Reward: ${d.rewardCoins} Coins</p>
                         <p>Admin Verify: User actually activated ${progress} accounts.</p>
                         <button class="btn btn-green" onclick="payTarget('${uid}', ${d.rewardCoins})">Approve & Pay</button>
@@ -60,7 +152,21 @@
                     </div>`;
                 }
             });
-            document.getElementById('requestsList').innerHTML = html || "<p>No active requests right now.</p>";
+
+            // Smart Voice and Browser Notification Trigger
+            if (prevPendingCount !== -1 && prevPaymentCount !== -1 && audioEnabled) {
+                if (currPendingCount > prevPendingCount) {
+                    notifyAndSpeak("New Target Request", "A user requested a new target.", "Notification! New target applied.");
+                }
+                if (currPaymentCount > prevPaymentCount) {
+                    notifyAndSpeak("Target Payment Request", "A user requested payment for their target.", "Notification! Target payment requested.");
+                }
+            }
+            
+            prevPendingCount = currPendingCount;
+            prevPaymentCount = currPaymentCount;
+
+            document.getElementById('requestsList').innerHTML = html || "<p style='color: #888;'>No active requests right now.</p>";
         });
 
         window.startTarget = function(uid, days, initialRefs) {
